@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Mosaic Studio</title>
+  <meta name="description" content="Mosaic Studio — load pictures, assign Front & Back trays, vote and flip tiles." />
+  <meta name="theme-color" content="#0c0a14" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="studio">
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="brand-mark">
+        <span class="tile-icon" aria-hidden="true"></span>
+        <div class="brand-text">
+          <p class="kicker">Mosaic</p>
+          <h1>Studio</h1>
+        </div>
+      </div>
+      <div class="topbar-center">
+        <div class="progress-bar" aria-label="Progress">
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <span class="progress-label" id="progressLabel">0 / 20</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="points-wrap" id="pointsWrap">
+          <span class="points-label">Points</span>
+          <span class="points-badge" id="pointsBadge">0</span>
+        </div>
+        <button type="button" class="btn btn-ghost" id="resetBtn">Reset</button>
+      </div>
+    </header>
+
+    <!-- Workspace: Library | Canvas | Trays -->
+    <main class="workspace">
+      <!-- LEFT: Library -->
+      <aside class="panel library-panel" aria-label="Your pictures">
+        <div class="panel-head">
+          <h2 class="panel-title">Library</h2>
+          <p class="panel-sub">Your pictures</p>
+        </div>
+
+        <label class="push-btn push-btn-primary" for="libraryFile">
+          <span class="push-btn-icon" aria-hidden="true">+</span>
+          <span>Add pictures</span>
+        </label>
+        <input type="file" id="libraryFile" accept="image/*" multiple hidden />
+
+        <div class="library-drop" id="libraryDrop" tabindex="0" role="button" aria-label="Drop images here">
+          <p class="library-drop-hint">Drop images here</p>
+          <p class="library-drop-sub">or use Add pictures</p>
+        </div>
+
+        <div class="library-thumbs" id="libraryThumbs" role="list" aria-label="Loaded pictures"></div>
+
+        <div class="library-assign" id="libraryAssign" hidden>
+          <p class="assign-hint" id="assignHint">Selected — assign to a tray</p>
+          <div class="assign-row">
+            <button type="button" class="push-btn push-btn-front" id="useAsFront" disabled>Use as Front</button>
+            <button type="button" class="push-btn push-btn-back" id="useAsBack" disabled>Use as Back</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER: Canvas -->
+      <section class="panel canvas-panel" aria-label="Mosaic canvas">
+        <div class="panel-head canvas-head">
+          <h2 class="panel-title">Canvas</h2>
+          <p class="hint" id="hint">Tap a tile to <strong>vote</strong> — each vote flips a piece</p>
+        </div>
+
+        <div class="stage" id="stage">
+          <div class="ghost-back" id="ghostBack" aria-hidden="true"></div>
+          <div class="grid" id="grid" role="grid" aria-label="Mosaic tiles"></div>
+          <div class="confetti" id="confetti" hidden aria-hidden="true"></div>
+        </div>
+
+        <div class="complete-banner" id="completeBanner" role="status"></div>
+
+        <div class="grid-config" hidden>
+          <label for="colsSelect">Grid</label>
+          <select id="colsSelect" aria-label="Columns">
+            <option value="4" selected>4 × 5</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- RIGHT: Trays -->
+      <aside class="panel trays-panel" aria-label="Front and Back trays">
+        <div class="panel-head">
+          <h2 class="panel-title">Trays</h2>
+          <p class="panel-sub">Front &amp; Back</p>
+        </div>
+
+        <div class="tray-card" id="frontSlot" data-slot="front">
+          <div class="tray-preview" id="frontPreview" aria-hidden="true"></div>
+          <div class="tray-meta">
+            <span class="tray-badge">Front</span>
+            <strong class="tray-title">Starting mosaic</strong>
+            <p class="tray-desc">Tiles you see first</p>
+            <p class="tray-status" id="frontStatus">Using default picture</p>
+          </div>
+          <p class="tray-drop-label">Drop here · or assign from library</p>
+          <label class="push-btn push-btn-front push-btn-sm" for="frontFile">
+            <span>Set as Front</span>
+          </label>
+          <input type="file" id="frontFile" accept="image/*" hidden />
+        </div>
+
+        <div class="tray-card" id="backSlot" data-slot="back">
+          <div class="tray-preview" id="backPreview" aria-hidden="true"></div>
+          <div class="tray-meta">
+            <span class="tray-badge tray-badge-back">Back</span>
+            <strong class="tray-title">Revealed picture</strong>
+            <p class="tray-desc">Appears as tiles flip</p>
+            <p class="tray-status" id="backStatus">Using default picture</p>
+          </div>
+          <p class="tray-drop-label">Drop here · or assign from library</p>
+          <label class="push-btn push-btn-back push-btn-sm" for="backFile">
+            <span>Set as Back</span>
+          </label>
+          <input type="file" id="backFile" accept="image/*" hidden />
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <p class="modal-kicker" id="modalKicker">Tile · vote to flip</p>
+      <h2 id="modalTitle">Question</h2>
+      <div class="options" id="options"></div>
+      <div class="tally" id="tally" hidden></div>
+      <button type="button" class="modal-close" id="modalClose">Not now</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
