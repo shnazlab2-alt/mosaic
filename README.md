@@ -19,3 +19,9 @@ python3 -m http.server 8765
 ## Files
 - `index.html`, `styles.css`, `app.js`
 - `tiles/front/*.png`, `tiles/back/*.png`, `*-full.png`
+
+<!-- stamp -->
+---
+**Author: Jeff SHNaZLab (Jeffrey Schnaus) · Named credit · Created 2026-10-12 19:40 MDT · First public 2026-10-14 00:26:12 MDT · 🟢 green originality mark**  
+_Concept and direction: Jeffrey Schnaus; AI-assisted build._
+<!-- /stamp -->
