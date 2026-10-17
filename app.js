@@ -418,7 +418,68 @@
     updateAssignUI();
   }
 
-  function assignLibItemToSlot(item, slot) {
+
+  /* ---- IndexedDB persistence for uploaded pictures + Front/Back choices ---- */
+  const IDB_NAME = "mosaic-images-v1";
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      if (!("indexedDB" in window)) { reject(new Error("no idb")); return; }
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains("library")) db.createObjectStore("library", { keyPath: "id" });
+        if (!db.objectStoreNames.contains("meta")) db.createObjectStore("meta");
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  let idbP = null;
+  function idb() { if (!idbP) idbP = idbOpen(); return idbP; }
+  function idbPersist() {
+    return idb().then((db) => new Promise((resolve) => {
+      const tx = db.transaction(["library", "meta"], "readwrite");
+      const lib = tx.objectStore("library");
+      lib.clear();
+      state.library.forEach((it) => lib.put({ id: it.id, name: it.name, fullDataUrl: it.fullDataUrl, tiles: it.tiles }));
+      tx.objectStore("meta").put({
+        frontLibId: state.frontLibId, backLibId: state.backLibId,
+        selectedLibId: state.selectedLibId, libIdSeq, savedAt: new Date().toISOString()
+      }, "slots");
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    })).catch(() => false);
+  }
+  function idbRestore() {
+    return idb().then((db) => new Promise((resolve) => {
+      const tx = db.transaction(["library", "meta"], "readonly");
+      const out = {};
+      const r1 = tx.objectStore("library").getAll();
+      r1.onsuccess = () => { out.items = r1.result || []; };
+      const r2 = tx.objectStore("meta").get("slots");
+      r2.onsuccess = () => { out.meta = r2.result || null; };
+      tx.oncomplete = () => resolve(out);
+      tx.onerror = () => resolve(null);
+    })).catch(() => null);
+  }
+  async function restoreImages() {
+    const data = await idbRestore();
+    if (!data || !data.items || !data.items.length) return;
+    data.items.sort((a, b) => a.id - b.id);
+    state.library = data.items;
+    const m = data.meta || {};
+    libIdSeq = Math.max(m.libIdSeq || 1, ...data.items.map((i) => i.id + 1));
+    const find = (id) => state.library.find((p) => p.id === id);
+    state.selectedLibId = find(m.selectedLibId) ? m.selectedLibId : state.library[state.library.length - 1].id;
+    const f = find(m.frontLibId), b = find(m.backLibId);
+    if (f) assignLibItemToSlot(f, "front", true);
+    if (b) assignLibItemToSlot(b, "back", true);
+    renderLibrary();
+    if (typeof updateAssignUI === "function") updateAssignUI();
+    updateTrayUI();
+  }
+
+  function assignLibItemToSlot(item, slot, restoring) {
     if (!item) return;
     if (slot === "front") {
       state.frontTiles = item.tiles;
@@ -437,6 +498,7 @@
     updateTrayUI();
     renderLibrary();
     updateChrome();
+    if (!restoring) idbPersist();
   }
 
   async function addFilesToLibrary(fileList) {
@@ -459,6 +521,7 @@
     if (lastId != null) state.selectedLibId = lastId;
     renderLibrary();
     updateAssignUI();
+    idbPersist();
   }
 
   async function handleDirectTrayPick(slot, file) {
@@ -770,6 +833,7 @@
       if (e.key === "Escape") closeModal();
     });
     els.resetBtn.addEventListener("click", resetAll);
+    restoreImages();
   }
 
   if (document.readyState === "loading") {
